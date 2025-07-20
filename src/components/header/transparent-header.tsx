@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,6 +25,7 @@ export function TransparentHeader({
   menuItems = [
     { label: "Trang chủ", href: "/" },
     { label: "Phim", href: "/movies" },
+    { label: "Giới thiệu", href: "/about" },
     { label: "Quản lý", href: "/admin" },
   ],
 }: TransparentHeaderProps) {
@@ -32,26 +34,20 @@ export function TransparentHeader({
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 50);
+      setIsScrolled(window.scrollY > 50);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-        ? "bg-background/80 backdrop-blur-md shadow-sm"
-        : "bg-transparent"}`}
-    >
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-background/80 backdrop-blur-md shadow-sm" : "bg-transparent"}`}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex-shrink-0">
             {logo || (
-              <Link href="/" className="text-xl font-bold">
+              <Link href="/" className="text-xl font-bold text-white">
                 Movie Web
               </Link>
             )}
@@ -63,7 +59,7 @@ export function TransparentHeader({
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-foreground/80 hover:text-foreground transition-colors"
+                className="text-white/80 hover:text-white transition-colors"
               >
                 {item.label}
               </Link>
@@ -77,6 +73,7 @@ export function TransparentHeader({
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
+              className="text-white hover:bg-white/10"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -95,14 +92,31 @@ export function TransparentHeader({
             </Button>
           </div>
 
-          {/* Theme Toggle */}
+          {/* Theme Toggle and Search */}
           <div className="hidden md:flex items-center space-x-2">
+            <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10" asChild>
+              <Link href="/search" aria-label="Tìm kiếm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                  />
+                </svg>
+              </Link>
+            </Button>
             <ThemeToggle />
-            
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -142,21 +156,28 @@ export function TransparentHeader({
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden mt-4 py-4 border-t">
+          <div className="md:hidden mt-4 py-4 border-t border-white/20">
             <nav className="flex flex-col space-y-4">
               {menuItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-foreground/80 hover:text-foreground transition-colors"
+                  className="text-white/80 hover:text-white transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
               ))}
               <Link
+                href="/search"
+                className="text-white/80 hover:text-white transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Tìm kiếm
+              </Link>
+              <Link
                 href="/profile"
-                className="text-foreground/80 hover:text-foreground transition-colors"
+                className="text-white/80 hover:text-white transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Hồ sơ

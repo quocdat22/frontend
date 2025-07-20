@@ -36,7 +36,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TransparentHeader />
-          <main className="pt-20">{children}</main>
+          <main>{children}</main>
         </ThemeProvider>
       </body>
     </html>
