@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     // Lấy tham số từ URL (nếu có)
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
-    const language = searchParams.get('language') || 'vi-VN';
+    //const language = searchParams.get('language') || 'vi-VN';
 
     // Gọi API TMDB để lấy danh sách phim phổ biến
     const response = await fetch(

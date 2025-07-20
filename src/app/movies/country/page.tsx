@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Movie } from '@/types/movie';
 import { MovieList } from '@/components/MovieList';
-import { Button } from '@/components/ui/button';
+
 
 export default function MoviesByCountryPage() {
   const searchParams = useSearchParams();
