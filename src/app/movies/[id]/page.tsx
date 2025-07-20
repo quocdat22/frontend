@@ -6,7 +6,7 @@ import { TMDB_API_KEY, TMDB_BASE_URL, formatRating, formatReleaseDate, getBackdr
 async function getMovieDetails(id: string) {
   try {
     const res = await fetch(
-      `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=vi-VN`,
+      `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=en-US`,
       { next: { revalidate: 3600 } } // Cache trong 1 giờ
     );
     
@@ -21,8 +21,9 @@ async function getMovieDetails(id: string) {
   }
 }
 
-export default async function MoviePage({ params }: { params: { id: string } }) {
-  const movie = await getMovieDetails(params.id);
+export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const movie = await getMovieDetails(id);
   
   if (!movie) {
     return (
@@ -86,7 +87,7 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
               <h1 className="text-3xl md:text-4xl font-bold mb-2">{movie.title}</h1>
               
               {movie.tagline && (
-                <p className="text-lg italic text-muted-foreground mb-4">"{movie.tagline}"</p>
+                <p className="text-lg italic text-muted-foreground mb-4">&quot;{movie.tagline}&quot;</p>
               )}
               
               <div className="flex flex-wrap gap-2 mb-6">

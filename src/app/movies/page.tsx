@@ -7,7 +7,7 @@ import { Movie, MovieResponse } from '@/types/movie';
 async function getPopularMovies(page = 1) {
   try {
     const res = await fetch(
-      `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=vi-VN&page=${page}`,
+      `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`,
       { next: { revalidate: 3600 } } // Cache trong 1 giờ
     );
     
@@ -26,14 +26,7 @@ async function getPopularMovies(page = 1) {
 // Đánh dấu component là dynamic để tránh lỗi với searchParams
 export const dynamic = 'force-dynamic';
 
-// Sử dụng kiểu dữ liệu cụ thể cho searchParams
-type SearchParams = { page?: string };
-
-export default async function MoviesPage({ 
-  searchParams 
-}: { 
-  searchParams: SearchParams
-}) {
+export default async function MoviesPage() {
   // Trong Next.js 15, không truy cập trực tiếp vào thuộc tính của searchParams
   // Sử dụng giá trị mặc định là 1
   const currentPage = 1;

@@ -1,16 +1,20 @@
-import { NextResponse } from 'next/server';
 import { TMDB_API_KEY, TMDB_BASE_URL } from '@/lib/tmdb';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request) {
   try {
-    const id = params.id;
-    const { searchParams } = new URL(request.url);
-    const language = searchParams.get('language') || 'vi-VN';
+    // Lấy id từ URL
+    const url = new URL(request.url);
+    const idMatch = url.pathname.match(/\/movies\/([^/]+)/);
+    const id = idMatch ? idMatch[1] : null;
+    if (!id) {
+      return Response.json({ error: 'Movie ID is required' }, { status: 400 });
+    }
+    const language = url.searchParams.get('language') || 'en-US';
 
     // Gọi API TMDB để lấy thông tin chi tiết của phim
     const response = await fetch(
       `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=${language}`,
-      { next: { revalidate: 3600 } } // Cache trong 1 giờ
+      { next: { revalidate: 3600 } }
     );
 
     if (!response.ok) {
@@ -19,10 +23,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const data = await response.json();
 
-    return NextResponse.json(data);
+    return Response.json(data);
   } catch (error) {
-    console.error(`Error fetching movie with ID ${params.id}:`, error);
-    return NextResponse.json(
+    console.error('Error fetching movie details:', error);
+    return Response.json(
       { error: 'Failed to fetch movie details' },
       { status: 500 }
     );

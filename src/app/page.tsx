@@ -1,14 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { MovieResponse, Movie } from "@/types/movie";
+import { MovieResponse } from "@/types/movie";
 import { formatRating, formatReleaseDate, getBackdropUrl, getPosterUrl, TMDB_API_KEY, TMDB_BASE_URL } from "@/lib/tmdb";
-import { Carousel, CarouselItem, CarouselPrevButton, CarouselNextButton } from "@/components/ui/carousel";
-import { MovieList } from '@/components/MovieList';
-import { MoviePagination } from '@/components/MoviePagination';
-import { PopularMoviesSection } from '@/components/PopularMoviesSection';
+import { Carousel, CarouselItem } from "@/components/ui/carousel";
 import { PopularMoviesInfinite } from '@/components/PopularMoviesInfinite';
-import { redirect } from 'next/navigation';
 
 async function getPopularMovies(page = 1) {
   try {
@@ -29,11 +25,11 @@ async function getPopularMovies(page = 1) {
   }
 }
 
-export default async function Home(props: { searchParams?: { page?: string } }) {
-  const currentPage = Number(props.searchParams?.page) > 0 ? Number(props.searchParams?.page) : 1;
+export default async function Home({ searchParams }: { searchParams?: Promise<{ page?: string }> }) {
+  const { page } = (await searchParams) || {};
+  const currentPage = Number(page) > 0 ? Number(page) : 1;
   const moviesData = await getPopularMovies(currentPage);
   const movies = moviesData.results;
-  const totalPages = moviesData.total_pages || 1;
 
   // Lấy 5 phim đầu tiên làm phim nổi bật
   const featuredMovies = movies.length > 0 ? movies.slice(0, 5) : [];
@@ -134,7 +130,7 @@ export default async function Home(props: { searchParams?: { page?: string } }) 
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">Danh sách phim phổ biến</h2>
+            {/* <h2 className="text-2xl font-bold">Danh sách phim phổ biến</h2> */}
           </div>
           <PopularMoviesInfinite />
         </div>

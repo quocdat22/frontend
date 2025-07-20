@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query');
     const page = searchParams.get('page') || '1';
-    const language = searchParams.get('language') || 'vi-VN';
+    const language = searchParams.get('language') || 'en-US';
     
     // Kiểm tra xem có query không
     if (!query) {

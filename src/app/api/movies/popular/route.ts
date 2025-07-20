@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     // Gọi API TMDB để lấy danh sách phim phổ biến
     const response = await fetch(
-      `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=${language}&page=${page}`,
+      `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`,
       { next: { revalidate: 3600 } } // Cache trong 1 giờ
     );
 
