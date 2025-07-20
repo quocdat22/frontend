@@ -192,10 +192,14 @@ export function TransparentHeader({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <button className="w-full text-left text-destructive" onClick={async () => {
-                      await supabase.auth.signOut();
-                      router.refresh();
-                    }}>
+                    <button
+                      className="w-full text-left text-destructive"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setUser(null);
+                        router.push("/");
+                      }}
+                    >
                       Đăng xuất
                     </button>
                   </DropdownMenuItem>
