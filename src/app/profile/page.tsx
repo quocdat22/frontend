@@ -1,28 +1,33 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
+      const { data } = await supabase.auth.getUser();
       if (data?.user) {
         setUser(data.user);
+      } else {
+        router.replace('/login');
       }
       setLoading(false);
     };
     getUser();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return <div className="text-center mt-10">Đang tải thông tin...</div>;
   }
 
   if (!user) {
-    return <div className="text-center mt-10">Bạn chưa đăng nhập.</div>;
+    // Đã redirect, không render gì
+    return null;
   }
 
   return (
