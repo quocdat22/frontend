@@ -63,6 +63,34 @@ export function TransparentHeader({
                 {item.label}
               </Link>
             ))}
+            {/* Quốc gia Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="text-white/80 hover:text-white transition-colors cursor-pointer flex items-center font-normal px-0" style={{fontSize: 'inherit', lineHeight: 'inherit'}}>
+                  Quốc gia
+                  <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {/* Top 10 quốc gia phổ biến, có thể chỉnh sửa danh sách này */}
+                {[
+                  { code: 'US', name: 'Mỹ' },
+                  { code: 'KR', name: 'Hàn Quốc' },
+                  { code: 'JP', name: 'Nhật Bản' },
+                  { code: 'CN', name: 'Trung Quốc' },
+                  { code: 'VN', name: 'Việt Nam' },
+                  { code: 'GB', name: 'Anh' },
+                  { code: 'FR', name: 'Pháp' },
+                  { code: 'DE', name: 'Đức' },
+                  { code: 'IT', name: 'Ý' },
+                  { code: 'CA', name: 'Canada' },
+                ].map((country) => (
+                  <DropdownMenuItem key={country.code} asChild>
+                    <Link href={`/movies/country?country=${country.code}`}>{country.name}</Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -167,6 +195,33 @@ export function TransparentHeader({
                   {item.label}
                 </Link>
               ))}
+              {/* Quốc gia Dropdown cho mobile */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <span className="text-white/80 hover:text-white transition-colors cursor-pointer flex items-center font-normal px-0 w-full justify-start" style={{fontSize: 'inherit', lineHeight: 'inherit'}}>
+                    Quốc gia
+                    <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                  </span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {[
+                    { code: 'US', name: 'Mỹ' },
+                    { code: 'KR', name: 'Hàn Quốc' },
+                    { code: 'JP', name: 'Nhật Bản' },
+                    { code: 'CN', name: 'Trung Quốc' },
+                    { code: 'IN', name: 'Ấn Độ' },
+                    { code: 'GB', name: 'Anh' },
+                    { code: 'FR', name: 'Pháp' },
+                    { code: 'DE', name: 'Đức' },
+                    { code: 'IT', name: 'Ý' },
+                    { code: 'CA', name: 'Canada' },
+                  ].map((country) => (
+                    <DropdownMenuItem key={country.code} asChild>
+                      <Link href={`/movies/country?country=${country.code}`}>{country.name}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Link
                 href="/search"
                 className="text-white/80 hover:text-white transition-colors"
