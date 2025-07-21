@@ -16,7 +16,7 @@ export default function ProfilePage() {
       if (data?.user) {
         setUser(data.user);
       } else {
-        router.replace('/login');
+        //router.replace('/login');
       }
       setLoading(false);
     };

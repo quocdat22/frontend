@@ -1,0 +1,308 @@
+Để hỗ trợ bạn trong việc triển khai phân quyền người dùng (Role-Based Access Control - RBAC) trong ứng dụng Next.js sử dụng Supabase, tôi sẽ tóm tắt các thông tin từ các bài viết liên quan và trình bày cách tiếp cận rõ ràng, dễ hiểu. Các nguồn được tham khảo từ kết quả tìm kiếm trên web và các bài đăng trên X, tập trung vào các bài viết gần đây về Next.js, Supabase, và RBAC. Dưới đây là hướng dẫn chi tiết:
+
+---
+
+### 1. Tổng quan về RBAC với Next.js và Supabase
+**Phân quyền người dùng (RBAC)** là cơ chế kiểm soát truy cập dựa trên vai trò (roles) được gán cho người dùng. Mỗi vai trò có một tập hợp quyền (permissions) cụ thể, giúp quản lý quyền truy cập vào các tài nguyên hoặc chức năng trong ứng dụng một cách an toàn và hiệu quả. Với Next.js và Supabase, bạn có thể tận dụng các tính năng như **Supabase Auth**, **Row-Level Security (RLS)**, và **Custom Claims** để triển khai RBAC.
+
+Dưới đây là các bước cơ bản để triển khai RBAC và các nguồn tham khảo từ các bài viết gần đây:
+
+---
+
+### 2. Các bước triển khai RBAC với Next.js và Supabase
+
+#### Bước 1: Thiết lập Supabase Auth trong Next.js
+Supabase cung cấp một hệ thống xác thực mạnh mẽ, hỗ trợ đăng nhập qua email, OAuth, và các phương thức khác. Bạn cần tích hợp Supabase Auth với Next.js để quản lý người dùng.
+
+- **Tạo dự án Supabase**: Trong Supabase Dashboard, tạo một dự án mới và lấy `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` để sử dụng trong ứng dụng Next.js.[](https://www.zestminds.com/blog/supabase-auth-nextjs-setup-guide/)
+- **Cài đặt thư viện Supabase**: Cài đặt `@supabase/supabase-js` và `@supabase/auth-ui-react` (nếu muốn sử dụng giao diện đăng nhập có sẵn).
+  ```bash
+  yarn add @supabase/supabase-js @supabase/auth-ui-react
+  ```
+- **Khởi tạo Supabase Client**: Tạo file `lib/supabaseClient.js` để khởi tạo Supabase client:
+  ```javascript
+  import { createClient } from '@supabase/supabase-js';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  ```
+- **Tích hợp giao diện đăng nhập**: Sử dụng `@supabase/auth-ui-react` để tạo trang đăng nhập/đăng ký:
+  ```javascript
+  import { Auth } from '@supabase/auth-ui-react';
+  import { ThemeSupa } from '@supabase/auth-ui-shared';
+  import { supabase } from '@/lib/supabaseClient';
+
+  export default function LoginPage() {
+    return (
+      <Auth
+        supabaseClient={supabase}
+        appearance={{ theme: ThemeSupa }}
+        providers={['google', 'github']}
+      />
+    );
+  }
+  ```
+  [](https://www.zestminds.com/blog/supabase-auth-nextjs-setup-guide/)
+
+- **Xử lý Server-Side Auth**: Để đảm bảo dữ liệu được bảo mật, sử dụng `createClient` trong Server Components hoặc Server Actions để lấy thông tin người dùng:
+  ```javascript
+  import { createClient } from '@/utils/supabase/server';
+
+  export default async function PrivatePage() {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+      redirect('/login');
+    }
+    return <p>Hello {data.user.email}</p>;
+  }
+  ```
+  Lưu ý: Luôn sử dụng `supabase.auth.getUser()` thay vì `getSession()` để đảm bảo token được làm mới và xác thực chính xác.[](https://supabase.com/docs/guides/auth/server-side/nextjs)
+
+#### Bước 2: Thiết lập bảng Roles và Permissions
+Để triển khai RBAC, bạn cần tạo các bảng trong Supabase để lưu trữ vai trò và quyền của người dùng.
+
+- **Tạo bảng `user_roles`**:
+  ```sql
+  create table user_roles (
+    user_id uuid not null references auth.users(id),
+    role text not null,
+    primary key (user_id, role)
+  );
+  ```
+  Bảng này liên kết `user_id` từ bảng `auth.users` của Supabase với vai trò (ví dụ: `admin`, `manager`, `user`).
+
+- **Kích hoạt Row-Level Security (RLS)**:
+  Bật RLS trên bảng `user_roles` để chỉ người dùng có quyền (ví dụ: admin) hoặc Supabase Auth Admin mới có thể truy cập:
+  ```sql
+  alter table user_roles enable row level security;
+  create policy "Allow auth admin to read user roles" on user_roles
+    for select to supabase_auth_admin using (true);
+  create policy "Allow users to read own roles" on user_roles
+    for select to authenticated using (auth.uid() = user_id);
+  ```
+
+- **Tạo bảng `role_permissions`** (tuỳ chọn):
+  Nếu cần quản lý quyền chi tiết hơn, bạn có thể tạo bảng `role_permissions` để gán các quyền cụ thể cho từng vai trò:
+  ```sql
+  create type permission as enum ('tasks.create', 'tasks.edit', 'tasks.delete');
+  create table role_permissions (
+    id serial primary key,
+    role text not null,
+    permission permission not null
+  );
+  ```
+  [](https://makerkit.dev/docs/next-supabase-turbo/development/permissions-and-roles)
+
+#### Bước 3: Sử dụng Custom Claims để lưu vai trò trong JWT
+Supabase hỗ trợ **Custom Claims** để thêm thông tin vai trò vào JWT token, giúp kiểm tra quyền truy cập dễ dàng hơn.
+
+- **Tạo Auth Hook**: Tạo hàm PostgreSQL để thêm vai trò vào JWT:
+  ```sql
+  create or replace function public.custom_access_token_hook(event jsonb)
+  returns jsonb
+  language plpgsql
+  stable
+  as $$
+  declare
+    claims jsonb;
+    user_role text;
+  begin
+    select role into user_role from public.user_roles
+    where user_id = (event->>'user_id')::uuid limit 1;
+    
+    claims := event->'claims';
+    if user_role is not null then
+      claims := jsonb_set(claims, '{user_role}', to_jsonb(user_role));
+    else
+      claims := jsonb_set(claims, '{user_role}', 'null');
+    end if;
+    
+    event := jsonb_set(event, '{claims}', claims);
+    return event;
+  end;
+  $$;
+
+  grant execute on function public.custom_access_token_hook to supabase_auth_admin;
+  grant all on table public.user_roles to supabase_auth_admin;
+  ```
+  Sau đó, vào Supabase Dashboard > Authentication > Hooks (Beta) và chọn hàm `custom_access_token_hook`.
+
+- **Truy xuất vai trò từ JWT**: Trong ứng dụng Next.js, bạn có thể giải mã JWT để lấy vai trò:
+  ```javascript
+  import { jwtDecode } from 'jwt-decode';
+  import { supabase } from '@/lib/supabaseClient';
+
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+      const jwt = jwtDecode(session.access_token);
+      const userRole = jwt.user_role;
+      console.log('User Role:', userRole);
+    }
+  });
+  ```
+  [](https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac)
+
+#### Bước 4: Kiểm soát truy cập trong Next.js
+- **Middleware**: Sử dụng middleware của Next.js để kiểm tra vai trò trước khi cho phép truy cập vào các tuyến đường:
+  ```javascript
+  // middleware.ts
+  import { createClient } from '@/utils/supabase/server';
+  import { NextResponse } from 'next/server';
+
+  export async function middleware(request) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+      
+    if (request.nextUrl.pathname.startsWith('/admin') && roleData?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+    
+    return NextResponse.next();
+  }
+
+  export const config = {
+    matcher: ['/admin/:path*', '/dashboard/:path*'],
+  };
+  ```
+  [](https://www.owolf.com/blog/centralizing-role-based-access-control-in-a-nextjs-layout-with-supabase-auth)
+
+- **Bảo vệ tuyến đường trong Server Components**:
+  ```javascript
+  import { createClient } from '@/utils/supabase/server';
+  import { redirect } from 'next/navigation';
+
+  export default async function AdminPage() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      redirect('/login');
+    }
+    
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+      
+    if (roleData?.role !== 'admin') {
+      redirect('/unauthorized');
+    }
+    
+    return <div>Admin Dashboard</div>;
+  }
+  ```
+
+- **Sử dụng RLS trong Supabase**:
+  Áp dụng RLS để giới hạn truy cập dữ liệu dựa trên vai trò:
+  ```sql
+  create policy "Allow admins to delete channels" on public.channels
+    for delete to authenticated
+    using ((select role from public.user_roles where user_id = auth.uid()) = 'admin');
+  ```
+  [](https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac)
+
+#### Bước 5: Chuyển hướng dựa trên vai trò
+Để chuyển hướng người dùng đến các dashboard cụ thể dựa trên vai trò (ví dụ: admin đến `/admin`, manager đến `/manager`), bạn có thể thực hiện trong Server Component hoặc Client Component:
+```javascript
+import { useSession } from '@supabase/auth-helpers-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function Dashboard() {
+  const session = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (session) {
+      const jwt = jwtDecode(session.access_token);
+      const role = jwt.user_role;
+      
+      if (role === 'admin') {
+        router.push('/admin');
+      } else if (role === 'manager') {
+        router.push('/manager');
+      } else {
+        router.push('/user');
+      }
+    } else {
+      router.push('/login');
+    }
+  }, [session]);
+
+  return null;
+}
+```
+[](https://www.reddit.com/r/nextjs/comments/1hgf89q/how_to_implement_rolebased_login_auth_in_nextjs/)
+
+---
+
+### 3. Một số lưu ý quan trọng
+- **Bảo mật**: Luôn sử dụng `supabase.auth.getUser()` để xác thực người dùng trong Server Components, vì `getSession()` có thể không làm mới token kịp thời.[](https://supabase.com/docs/guides/auth/server-side/nextjs)
+- **Tắt bộ nhớ đệm của Next.js**: Gọi `cookies()` trước các yêu cầu Supabase để tắt bộ nhớ đệm, đảm bảo dữ liệu được lấy trực tiếp từ Supabase.[](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)[](https://supabase.com/docs/guides/auth/server-side/nextjs)
+- **Tích hợp bên thứ ba**: Nếu cần quản lý quyền phức tạp hơn (ví dụ: Relationship-Based Access Control - ReBAC), bạn có thể tích hợp với các dịch vụ như **Permit.io** để mở rộng khả năng kiểm soát truy cập.[](https://www.permit.io/blog/supabase-authentication-and-authorization-in-nextjs-implementation-guide)
+- **Tài liệu chính thức**: Tham khảo hướng dẫn RBAC của Supabase tại https://supabase.com/docs/guides/auth/custom-claims-and-role-based-access-control-rbac.[](https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac)
+- **Cộng đồng**: Các bài đăng trên Reddit và Stack Overflow cung cấp nhiều ví dụ thực tế từ cộng đồng. Ví dụ, bạn có thể tham khảo các kho lưu trữ như `usebasejump/basejump` trên GitHub để xem cách triển khai RBAC.[](https://www.reddit.com/r/Supabase/comments/184hs8d/supabase_next_js_14_role_based_access_control/)
+
+---
+
+### 4. Các bài viết và tài nguyên tham khảo
+Dưới đây là các nguồn liên quan từ kết quả tìm kiếm mà tôi đã sử dụng để tổng hợp hướng dẫn:
+
+1. **Supabase Docs**:
+   - **Supabase Auth with Next.js App Router**: Hướng dẫn tích hợp Supabase Auth với Next.js App Router.[](https://supabase.com/docs/guides/auth/quickstarts/nextjs)
+   - **Custom Claims & RBAC**: Hướng dẫn sử dụng Auth Hooks để thêm vai trò vào JWT.[](https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac)
+   - **Server-Side Auth**: Cách thiết lập xác thực phía server với Next.js.[](https://supabase.com/docs/guides/auth/server-side/nextjs)
+   - **User Management App**: Ví dụ về ứng dụng quản lý người dùng với Supabase.[](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs)
+
+2. **Cộng đồng và bài viết bên thứ ba**:
+   - **Reddit (r/Supabase)**: Thảo luận về RBAC với Supabase, bao gồm các liên kết đến kho GitHub như `supabase-community/supabase-custom-claims`.[](https://www.reddit.com/r/Supabase/comments/184hs8d/supabase_next_js_14_role_based_access_control/)[](https://www.reddit.com/r/Supabase/comments/10dpvjp/implementing_rolebased_authorisation/)[](https://www.reddit.com/r/Supabase/comments/1cmw6uo/can_i_implement_role_based_access_control_using/)
+   - **Stack Overflow**: Cách tiếp cận lưu trữ vai trò trong JWT và kiểm tra qua middleware.[](https://stackoverflow.com/questions/78851269/implementing-role-based-authorization-in-next-js-14-with-supabase-efficient-rol)
+   - **Medium (Lasse D. Skaalum)**: Hướng dẫn triển khai RBAC với Next.js và Supabase, sử dụng trigger để đồng bộ vai trò với JWT.[](https://lasse-skaalum.medium.com/implementing-rbac-with-next-js-and-supabase-5dd20adaaeba)
+   - **Makerkit.dev**: Triển khai RBAC chi tiết với bảng `roles` và `role_permissions`.[](https://makerkit.dev/docs/next-supabase-turbo/development/permissions-and-roles)
+   - **Zestminds**: Hướng dẫn nhanh tích hợp Supabase Auth với Next.js.[](https://www.zestminds.com/blog/supabase-auth-nextjs-setup-guide/)
+
+3. **X Posts**:
+   - Một bài đăng từ `@supabase` về bản cập nhật `@supabase/ssr` v0.4.0, cải thiện xác thực phía server.
+   - Bài đăng từ `@vikingmute` ca ngợi Supabase Auth vì tính mạnh mẽ và dễ tích hợp.
+
+---
+
+### 5. Ví dụ thực tế
+Giả sử bạn muốn xây dựng một ứng dụng với ba vai trò: `admin`, `manager`, và `user`:
+- **Admin**: Có quyền xóa/sửa tất cả dữ liệu.
+- **Manager**: Chỉ có quyền sửa dữ liệu trong nhóm của họ.
+- **User**: Chỉ có quyền xem dữ liệu của chính mình.
+
+**Cấu trúc bảng**:
+- Bảng `user_roles`: Lưu `user_id` và `role`.
+- Bảng `channels`: Lưu dữ liệu kênh, với RLS giới hạn quyền xóa cho `admin`:
+  ```sql
+  create policy "Allow admins to delete channels" on channels
+    for delete to authenticated
+    using ((select role from user_roles where user_id = auth.uid()) = 'admin');
+  ```
+
+**Kiểm tra quyền trong ứng dụng**:
+- Trong middleware hoặc Server Component, kiểm tra `role` từ bảng `user_roles` hoặc JWT để chuyển hướng hoặc hiển thị nội dung phù hợp.
+
+**Chuyển hướng**:
+- Sau khi đăng nhập, giải mã JWT để lấy `user_role` và chuyển hướng đến `/admin`, `/manager`, hoặc `/dashboard`.
+
+---
+
+### 6. Kết luận
+Việc triển khai RBAC trong Next.js và Supabase đòi hỏi kết hợp **Supabase Auth** để xác thực, **Custom Claims** để lưu vai trò trong JWT, **RLS** để kiểm soát truy cập dữ liệu, và **middleware** hoặc **Server Components** để quản lý tuyến đường. Các tài liệu chính thức của Supabase và các bài viết từ cộng đồng cung cấp hướng dẫn chi tiết, dễ áp dụng. Bạn có thể bắt đầu với các bước trên và tham khảo các kho GitHub như `supabase-community/supabase-custom-claims` để có ví dụ thực tế.
+
+Nếu bạn cần thêm code mẫu hoặc hướng dẫn cụ thể hơn cho một phần (ví dụ: middleware, RLS policy), hãy cho tôi biết!
