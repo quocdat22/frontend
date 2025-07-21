@@ -2,9 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import type { User } from '@supabase/supabase-js';
+import Image from 'next/image';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -33,9 +35,11 @@ export default function ProfilePage() {
   return (
     <div className="max-w-xl mx-auto mt-10 p-6 bg-white dark:bg-zinc-900 rounded-lg shadow-md">
       <div className="flex flex-col items-center">
-        <img
+        <Image
           src={user.user_metadata?.avatar_url || '/file.svg'}
           alt="Avatar"
+          width={96}
+          height={96}
           className="w-24 h-24 rounded-full border-4 border-blue-500 mb-4"
         />
         <h2 className="text-2xl font-bold mb-2">{user.user_metadata?.name || user.email}</h2>
