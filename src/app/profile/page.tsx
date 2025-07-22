@@ -26,12 +26,17 @@ export default function ProfilePage() {
     getUser()
   }, [router, supabase])
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
+
   if (loading) {
     return <div className="text-center mt-10">Đang tải thông tin...</div>;
   }
 
   if (!user) {
-    // Đã redirect, không render gì
     return null;
   }
 

@@ -193,8 +193,7 @@ export function TransparentHeader({
                       className="w-full text-left text-destructive"
                       onClick={async () => {
                         await supabase.auth.signOut();
-                        // setUser(null); // Không cần nữa, context sẽ tự cập nhật
-                        router.push("/");
+                        window.location.href = "/";
                       }}
                     >
                       Đăng xuất

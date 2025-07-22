@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const {
         data: { user },
       } = await supabase.auth.getUser()
+      //console.log('[AuthContext] getUser', user)
       setUser(user ?? null)
       if (user) {
         const { data: profile } = await supabase
@@ -37,11 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select('role')
           .eq('id', user.id)
           .single()
+        //console.log('[AuthContext] getUser profile', profile)
         setRole((profile?.role as Role) ?? 'user')
       } else {
         setRole(null)
       }
       setLoading(false)
+      //console.log('[AuthContext] getUserAndRole done', { user, role, loading: false })
     }
 
     getUserAndRole()
@@ -49,7 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
+      async (_event, session) => {
+        console.log('[AuthContext] onAuthStateChange', _event, session)
         setUser(session?.user ?? null)
         if (session?.user) {
           const { data: profile } = await supabase
@@ -57,11 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .select('role')
             .eq('id', session.user.id)
             .single()
+          console.log('[AuthContext] onAuthStateChange profile', profile)
           setRole((profile?.role as Role) ?? 'user')
         } else {
           setRole(null)
         }
         setLoading(false)
+        console.log('[AuthContext] onAuthStateChange done', { user: session?.user, role, loading: false })
       }
     )
 
