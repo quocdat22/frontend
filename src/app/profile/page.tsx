@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/utils/supabase/client'
 import type { User } from '@supabase/supabase-js';
 import Image from 'next/image';
 
@@ -9,19 +9,22 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const supabase = createClient()
 
   useEffect(() => {
     const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        setUser(data.user);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        setUser(user)
       } else {
-        router.replace('/login');
+        router.replace('/login')
       }
-      setLoading(false);
-    };
-    getUser();
-  }, [router]);
+      setLoading(false)
+    }
+    getUser()
+  }, [router, supabase])
 
   if (loading) {
     return <div className="text-center mt-10">Đang tải thông tin...</div>;

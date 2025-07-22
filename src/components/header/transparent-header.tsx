@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from '@/utils/supabase/client'
 import { useRouter } from "next/navigation";
-import type { User } from '@supabase/supabase-js';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface TransparentHeaderProps {
   logo?: React.ReactNode;
@@ -26,29 +26,16 @@ interface TransparentHeaderProps {
 export function TransparentHeader({
   logo,
   menuItems = [
-    { label: "Trang chủ", href: "/" },
-    { label: "Phim", href: "/movies" },
-    { label: "Giới thiệu", href: "/about" },
-    { label: "Quản lý", href: "/admin" },
+    { label: 'Trang chủ', href: '/' },
+    { label: 'Phim', href: '/movies' },
+    { label: 'Giới thiệu', href: '/about' },
   ],
 }: TransparentHeaderProps) {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data?.user || null);
-    });
-    // Listen for auth changes (login/logout)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, []);
+  const { user, isAdmin, isModerator } = useAuth()
+  const router = useRouter()
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const supabase = createClient()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -82,6 +69,14 @@ export function TransparentHeader({
                 {item.label}
               </Link>
             ))}
+            {(isAdmin || isModerator) && (
+              <Link
+                href="/admin"
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                Quản trị
+              </Link>
+            )}
             {/* Quốc gia Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -186,17 +181,19 @@ export function TransparentHeader({
                       Hồ sơ
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/admin" className="w-full">
-                      Quản trị
-                    </Link>
-                  </DropdownMenuItem>
+                  {(isAdmin || isModerator) && (
+                    <DropdownMenuItem>
+                      <Link href="/admin" className="w-full">
+                        Quản trị
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem>
                     <button
                       className="w-full text-left text-destructive"
                       onClick={async () => {
                         await supabase.auth.signOut();
-                        setUser(null);
+                        // setUser(null); // Không cần nữa, context sẽ tự cập nhật
                         router.push("/");
                       }}
                     >
@@ -227,6 +224,15 @@ export function TransparentHeader({
                   {item.label}
                 </Link>
               ))}
+              {(isAdmin || isModerator) && (
+                <Link
+                  href="/admin"
+                  className="text-white/80 hover:text-white transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Quản trị
+                </Link>
+              )}
               {/* Quốc gia Dropdown cho mobile */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -268,6 +274,15 @@ export function TransparentHeader({
               >
                 Hồ sơ
               </Link>
+              {(isAdmin || isModerator) && (
+                <Link
+                  href="/admin"
+                  className="text-white/80 hover:text-white transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Quản trị
+                </Link>
+              )}
               <button className="text-left text-destructive">
                 Đăng xuất
               </button>

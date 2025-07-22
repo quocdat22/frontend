@@ -2,31 +2,42 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from '@/utils/supabase/client'
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/');
+    }
+  }, [user, loading, router]);
+  if (loading) return <div>Loading...</div>;
+  if (user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    setFormLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    setLoading(false);
+    setFormLoading(false);
     if (error) {
       setError(error.message || "Đăng nhập thất bại. Vui lòng thử lại.");
     } else {
@@ -67,7 +78,7 @@ export default function LoginPage() {
               variant="outline"
               className="w-full"
               onClick={handleGoogleLogin}
-              disabled={googleLoading || loading}
+              disabled={googleLoading || formLoading}
             >
               {googleLoading ? (
                 "Đang chuyển hướng..."
@@ -131,7 +142,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={loading || googleLoading}
+                disabled={formLoading || googleLoading}
                 autoComplete="email"
               />
             </div>
@@ -152,7 +163,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={loading || googleLoading}
+                disabled={formLoading || googleLoading}
                 autoComplete="current-password"
               />
             </div>
@@ -161,8 +172,8 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-              {loading ? "Đang kiểm tra..." : "Đăng Nhập"}
+            <Button type="submit" className="w-full" disabled={formLoading || googleLoading}>
+              {formLoading ? "Đang kiểm tra..." : "Đăng Nhập"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
